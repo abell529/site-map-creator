@@ -1,0 +1,32 @@
+{
+  "name": "linksieve",
+  "version": "0.1.0",
+  "description": "Local-only CLI crawler to extract designated links.",
+  "type": "module",
+  "bin": {
+    "linksieve": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run",
+    "crawl": "tsx src/cli.ts crawl"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "commander": "^12.1.0",
+    "playwright": "^1.48.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "eslint": "^9.9.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.30.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.5"
+  }
+}
