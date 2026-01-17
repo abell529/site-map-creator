@@ -8,13 +8,14 @@ export type FetchResult = {
 
 export type FetchOptions = {
   followRedirects: boolean;
+  userAgent: string;
 };
 
 export async function fetchPage(url: string, options: FetchOptions): Promise<FetchResult> {
   const response = await fetch(url, {
     redirect: options.followRedirects ? "follow" : "manual",
     headers: {
-      "user-agent": "linksieve/0.1.0"
+      "user-agent": options.userAgent
     }
   });
 

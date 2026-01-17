@@ -21,6 +21,7 @@ export type CrawlOptions = {
   format: "csv" | "jsonl";
   render: boolean;
   dataDir: string;
+  userAgent: string;
 };
 
 export type CrawlResult = {
@@ -47,7 +48,7 @@ export async function crawlSite(options: CrawlOptions): Promise<CrawlResult> {
   let pagesVisited = 0;
   let resultsFound = 0;
 
-  const renderer = options.render ? new RenderedFetcher() : null;
+  const renderer = options.render ? new RenderedFetcher(options.userAgent) : null;
   if (renderer) {
     await renderer.init();
   }
@@ -56,7 +57,7 @@ export async function crawlSite(options: CrawlOptions): Promise<CrawlResult> {
     if (pagesVisited >= options.maxPages) return;
     const result = renderer
       ? await renderer.fetch(item.url)
-      : await fetchPage(item.url, { followRedirects: options.followRedirects });
+      : await fetchPage(item.url, { followRedirects: options.followRedirects, userAgent: options.userAgent });
 
     if (!isAllowedDomain(result.finalUrl, options.allowedDomains)) {
       throw new Error(
@@ -140,6 +141,11 @@ function delay(ms: number): Promise<void> {
 
 class RenderedFetcher {
   private browser: import("playwright").Browser | null = null;
+  private readonly userAgent: string;
+
+  constructor(userAgent: string) {
+    this.userAgent = userAgent;
+  }
 
   async init(): Promise<void> {
     const playwright = await import("playwright");
@@ -153,6 +159,7 @@ class RenderedFetcher {
 
     const page = await this.browser.newPage();
     try {
+      await page.setUserAgent(this.userAgent);
       const response = await page.goto(url, { waitUntil: "domcontentloaded" });
       const status = response?.status() ?? null;
       if (status === 403 || status === 429) {

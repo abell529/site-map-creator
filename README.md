@@ -59,3 +59,4 @@ If Playwright is unable to access a page (HTTP 403/429), the crawl stops with a 
 - `--output <path.csv>` (default `./linksieve-results.csv`)
 - `--format csv|jsonl` (default csv)
 - `--render` (use Playwright)
+- `--user-agent <ua>` (default `linksieve/0.1.0`)
