@@ -27,6 +27,7 @@ program
   .option("--output <path>", "Output path", "./linksieve-results.csv")
   .option("--format <format>", "Output format: csv|jsonl", "csv")
   .option("--render", "Use Playwright to render pages", false)
+  .option("--user-agent <ua>", "User-Agent header to send with requests", "linksieve/0.1.0")
   .action(async (startUrl, options) => {
     try {
       const normalizedStart = normalizeUrl(startUrl);
@@ -53,7 +54,8 @@ program
         outputPath,
         format: options.format === "jsonl" ? "jsonl" : "csv",
         render: Boolean(options.render),
-        dataDir
+        dataDir,
+        userAgent: String(options.userAgent)
       });
 
       console.log(`Crawl complete. Pages visited: ${result.pagesVisited}. Results found: ${result.resultsFound}.`);
