@@ -141,6 +141,7 @@ function delay(ms: number): Promise<void> {
 
 class RenderedFetcher {
   private browser: import("playwright").Browser | null = null;
+  private context: import("playwright").BrowserContext | null = null;
   private readonly userAgent: string;
 
   constructor(userAgent: string) {
@@ -150,16 +151,16 @@ class RenderedFetcher {
   async init(): Promise<void> {
     const playwright = await import("playwright");
     this.browser = await playwright.chromium.launch();
+    this.context = await this.browser.newContext({ userAgent: this.userAgent });
   }
 
   async fetch(url: string): Promise<{ requestedUrl: string; finalUrl: string; status: number | null; contentType: string | null; body: string }> {
-    if (!this.browser) {
+    if (!this.browser || !this.context) {
       throw new Error("Rendered fetcher not initialized.");
     }
 
-    const page = await this.browser.newPage();
+    const page = await this.context.newPage();
     try {
-      await page.setUserAgent(this.userAgent);
       const response = await page.goto(url, { waitUntil: "domcontentloaded" });
       const status = response?.status() ?? null;
       if (status === 403 || status === 429) {
@@ -177,6 +178,8 @@ class RenderedFetcher {
   }
 
   async close(): Promise<void> {
+    await this.context?.close();
+    this.context = null;
     await this.browser?.close();
     this.browser = null;
   }
