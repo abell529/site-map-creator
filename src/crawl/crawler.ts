@@ -48,7 +48,7 @@ export async function crawlSite(options: CrawlOptions): Promise<CrawlResult> {
   let pagesVisited = 0;
   let resultsFound = 0;
 
-  const renderer = options.render ? new RenderedFetcher(options.userAgent) : null;
+  const renderer = options.render ? new RenderedFetcher(options.userAgent, options.followRedirects) : null;
   if (renderer) {
     await renderer.init();
   }
@@ -75,7 +75,7 @@ export async function crawlSite(options: CrawlOptions): Promise<CrawlResult> {
     });
 
     const isHtml = result.contentType?.includes("text/html") || result.contentType?.includes("application/xhtml+xml");
-    if (!isHtml && !options.render) {
+    if (!isHtml && result.contentType) {
       return;
     }
 
@@ -143,9 +143,11 @@ class RenderedFetcher {
   private browser: import("playwright").Browser | null = null;
   private context: import("playwright").BrowserContext | null = null;
   private readonly userAgent: string;
+  private readonly followRedirects: boolean;
 
-  constructor(userAgent: string) {
+  constructor(userAgent: string, followRedirects: boolean) {
     this.userAgent = userAgent;
+    this.followRedirects = followRedirects;
   }
 
   async init(): Promise<void> {
@@ -154,7 +156,9 @@ class RenderedFetcher {
     this.context = await this.browser.newContext({ userAgent: this.userAgent });
   }
 
-  async fetch(url: string): Promise<{ requestedUrl: string; finalUrl: string; status: number | null; contentType: string | null; body: string }> {
+  async fetch(
+    url: string
+  ): Promise<{ requestedUrl: string; finalUrl: string; status: number | null; contentType: string | null; body: string }> {
     if (!this.browser || !this.context) {
       throw new Error("Rendered fetcher not initialized.");
     }
@@ -172,6 +176,11 @@ class RenderedFetcher {
       const contentType = response?.headers()["content-type"] ?? null;
       const body = await page.content();
       return { requestedUrl: url, finalUrl, status, contentType, body };
+    } catch (error) {
+      if (isDownloadError(error)) {
+        return fetchPage(url, { followRedirects: this.followRedirects, userAgent: this.userAgent });
+      }
+      throw error;
     } finally {
       await page.close();
     }
@@ -183,4 +192,8 @@ class RenderedFetcher {
     await this.browser?.close();
     this.browser = null;
   }
+}
+
+function isDownloadError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("Download is starting");
 }
