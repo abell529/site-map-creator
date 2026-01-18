@@ -59,6 +59,10 @@ export async function crawlSite(options: CrawlOptions): Promise<CrawlResult> {
       ? await renderer.fetch(item.url)
       : await fetchPage(item.url, { followRedirects: options.followRedirects, userAgent: options.userAgent });
 
+    if (!options.followRedirects && result.requestedUrl !== result.finalUrl) {
+      return;
+    }
+
     if (!isAllowedDomain(result.finalUrl, options.allowedDomains)) {
       throw new Error(
         `Redirected to a URL outside allowed domains: ${result.finalUrl}. Adjust --allowed or disable redirects.`
