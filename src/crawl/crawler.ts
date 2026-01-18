@@ -178,7 +178,7 @@ class RenderedFetcher {
       }
       const finalUrl = page.url();
       const contentType = response?.headers()["content-type"] ?? null;
-      const body = await page.content();
+      const body = await getStablePageContent(page);
       return { requestedUrl: url, finalUrl, status, contentType, body };
     } catch (error) {
       if (isDownloadError(error)) {
@@ -200,4 +200,26 @@ class RenderedFetcher {
 
 function isDownloadError(error: unknown): boolean {
   return error instanceof Error && error.message.includes("Download is starting");
+}
+
+async function getStablePageContent(page: import("playwright").Page): Promise<string> {
+  const maxAttempts = 2;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await page.content();
+    } catch (error) {
+      if (!isNavigationContentError(error) || attempt === maxAttempts - 1) {
+        throw error;
+      }
+      await page.waitForLoadState("load", { timeout: 10000 });
+    }
+  }
+  return page.content();
+}
+
+function isNavigationContentError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.includes("page is navigating") || error.message.includes("Execution context was destroyed"))
+  );
 }
